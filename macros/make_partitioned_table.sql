@@ -13,10 +13,32 @@
 
 {% endmacro %}
 
+{% macro new_records_for_date_dedupe(date_field, date, sql, from_table, dest, unique_key) %}
+
+    with source as (
+
+        {{ sql }}
+
+    ),
+
+    dest as (
+
+        select * from {{ dest }}
+
+    )
+
+    select *
+    from source
+    where {{ date_field }} = '{{ date }}'
+      and {{ unique_key }} not in (select distinct {{ unique_key }} from dest)
+
+{% endmacro %}
+
 {% macro delete_records_for_date(date_field, date, sql, from_table) %}
 
     delete from {{ from_table }}
     where {{ date_field }} = '{{ date }}'
+      and date_diff(current_date, {{ date_field }}, day) >= 2
 
 {% endmacro %}
 
@@ -46,6 +68,7 @@
     {%- set date_field = config.require('date_field') -%}
     {%- set from_table = config.get('from_table') -%}
     {%- set columns = config.get('columns') -%}
+    {%- set unique_key = config.get('unique_key') -%}
 
     {% set source_schema, source_table = from_table.split(".") %}
 
@@ -73,7 +96,7 @@
         {% set date_label = date | string | replace("-", "")  %}
         {% set period_identifier = identifier ~ date_label %}
 
-        {% if period_identifier not in existing_tables %}o
+        {% if period_identifier not in existing_tables %}
             {{ log(' -> Creating ' ~ period_identifier, info=True) }}
 
             {% set create_sql = new_records_for_date(date_field, date, sql, from_table) %}
@@ -81,7 +104,8 @@
 
         {% else %}
             {{ log(' -> Inserting into ' ~ period_identifier, info=True) }}
-            {% set insert_sql = new_records_for_date(date_field, date, sql, from_table) %}
+            {% set dest = source_schema ~ "." ~ period_identifier %}
+            {% set insert_sql = new_records_for_date_dedupe(date_field, date, sql, from_table, dest, unique_key) %}
 
             {% call statement() %}
 

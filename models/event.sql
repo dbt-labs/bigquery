@@ -112,13 +112,13 @@
 ] %}
 
 
-
 {{
     config(
         materialized='make_partitioned_table',
         from_table='snowplow.event',
         date_field='date(collector_tstamp)',
-        columns=columns
+        columns=columns,
+        unique_key='event_id'
     )
 }}
 
