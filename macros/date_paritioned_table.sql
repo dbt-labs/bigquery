@@ -59,7 +59,7 @@
         {% set period_identifier = identifier ~ date_label %}
 
         {% if flags.FULL_REFRESH or (period_identifier not in existing_tables) or loop.last %}
-            {% set create_sql = sql_for_date(date_field, date, sql, base_schema, base_relation, filter_output) %}
+            {% set create_sql = bigquery.sql_for_date(date_field, date, sql, base_schema, base_relation, filter_output) %}
             {{ log(' -> Running ' ~ period_identifier, info=True) }}
             {{ create_table_as(True, period_identifier, create_sql) }}
         {% else %}
