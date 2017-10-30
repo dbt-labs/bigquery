@@ -99,17 +99,17 @@
         {% if period_identifier not in existing_tables %}
             {{ log(' -> Creating ' ~ period_identifier, info=True) }}
 
-            {% set create_sql = new_records_for_date(date_field, date, sql, from_table) %}
+            {% set create_sql = bigquery.new_records_for_date(date_field, date, sql, from_table) %}
             {{ adapter.execute_model({"name": period_identifier, "injected_sql": create_sql, "schema": source_schema}, 'table') }}
 
         {% else %}
             {{ log(' -> Inserting into ' ~ period_identifier, info=True) }}
             {% set dest = source_schema ~ "." ~ period_identifier %}
-            {% set insert_sql = new_records_for_date_dedupe(date_field, date, sql, from_table, dest, unique_key) %}
+            {% set insert_sql = bigquery.new_records_for_date_dedupe(date_field, date, sql, from_table, dest, unique_key) %}
 
             {% call statement() %}
 
-                {{ insert_into(source_schema, period_identifier, insert_sql, columns) }}
+                {{ bigquery.insert_into(source_schema, period_identifier, insert_sql, columns) }}
 
             {% endcall %}
 
@@ -117,7 +117,7 @@
 
         {% call statement() %}
 
-            {{ delete_records_for_date(date_field, date, sql, from_table) }}
+            {{ bigquery.delete_records_for_date(date_field, date, sql, from_table) }}
 
         {% endcall %}
     {% endfor %}
